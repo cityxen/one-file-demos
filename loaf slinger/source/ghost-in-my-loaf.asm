@@ -1,4 +1,5 @@
-
+.const scroll_location     = $0a20
+.const color_cycle_location = $09f0
 .const charset_location    = $1000
 .const zp_tmp              = $4e
 .const zp_tmp_lo           = $4e
@@ -274,12 +275,6 @@ reset_colors:
     sta vars+1
 	rts
 
-color_table:
-.byte LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED
-.byte RED,RED, ORANGE,ORANGE, YELLOW,YELLOW, WHITE,WHITE,WHITE,WHITE, YELLOW,YELLOW, ORANGE,ORANGE, RED, RED
-.byte LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED
-.byte $ff
-
 scroll_count:
 .byte 0
 count_var_low:
@@ -289,7 +284,15 @@ count_var_high:
 timer_var:
 .byte 0
 
-* = $9f0 "Scroll Text"
+* = color_cycle_location "Color Cycle Data"
+color_table:
+.byte LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED
+.byte RED,RED, ORANGE,ORANGE, YELLOW,YELLOW, WHITE,WHITE,WHITE,WHITE, YELLOW,YELLOW, ORANGE,ORANGE, RED, RED
+.byte LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED
+.byte $ff
+
+* = scroll_location "Scroll Text"
+
 
 hello_message:
 .encoding "screencode_upper"
