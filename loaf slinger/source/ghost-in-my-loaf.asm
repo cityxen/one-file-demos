@@ -129,26 +129,17 @@ copychars:
 	sta $cf00,x
 	inx
 	bne !-
-	
-
 	rts
 
 
 irq_chars:
-	
-	lda 56576
+	lda 56576 // change vic bank
 	and #252
 	sta 56576
-
 	lda #$02
 	sta $d018
-
-	lda #192
+	lda #192 // point screen memory to $c000
 	sta 648
-
-	// lda #200
-	// lda #%00000000
-	// sta VIC_CONTROL_REG_2
 	lda scroll_count
 	and #07
     sta VIC_CONTROL_REG_2
@@ -169,9 +160,9 @@ irq_chars:
 
 	jsr scroll_it
 
-	asl $d019
-
 	jsr music.play
+
+	asl $d019
 	jmp $ea31
 
 irq_bitmap:
@@ -206,9 +197,6 @@ irq_bitmap:
     and #$0f           // get low 4 bits for background color
     sta $d021
 
-	// lda #$06
-	// sta $d020
-
 	lda #<irq_chars
 	sta $0314
 	lda #>irq_chars
@@ -222,25 +210,6 @@ irq_bitmap:
 
 scroll_it:
       
-// loop1d:
-//    lda #$f2         // Wait for raster line $f2
-//    cmp VIC_RASTER_COUNTER
-//	beq !+
-    // bne loop256      // if not at $f2, goto loop1
-//	rts
-//!:
-    
-//varlabel:
-
-
-//loop2:
-//    lda #$ff // wait for raster line $ff
-//    cmp VIC_RASTER_COUNTER
-//    bne loop2
-
-    //lda #$c8 // reset the borders to 40 column mode
-    //sta VIC_CONTROL_REG_2
-
     dec scroll_count
     lda scroll_count
     and #$07
