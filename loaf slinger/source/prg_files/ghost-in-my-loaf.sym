@@ -1,5 +1,5 @@
 .label irq_bitmap=$906
-.label charset=$1800
+.label charset=$1000
 .label color_table=$9c1
 .label mvlp2=$970
 .label mvlp1=$965
@@ -16,7 +16,7 @@
 .label mvlp223=$98b
 .label irq_chars=$8c7
 .label nomore_color=$99d
-.label hello_message=$9e8
+.label hello_message=$9f0
 .label copychars=$89e
 .label scroll_it=$957
 .label skipmove=$98b

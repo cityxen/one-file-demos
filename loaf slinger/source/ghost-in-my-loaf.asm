@@ -1,4 +1,5 @@
 
+.const charset_location    = $1000
 .const zp_tmp              = $4e
 .const zp_tmp_lo           = $4e
 .const zp_tmp_hi           = $4f
@@ -20,7 +21,7 @@
 *=music.location "Music"
 .fill music.size, music.getData(i) // <- Here we put the music in memory
 
-*=$1800 "char set"
+*=charset_location "char set"
 charset:
 .import binary "arcade-64chars.bin"
 
@@ -288,6 +289,8 @@ count_var_high:
 timer_var:
 .byte 0
 
+* = $9f0 "Scroll Text"
+
 hello_message:
 .encoding "screencode_upper"
 .text "                    . . . "
@@ -314,8 +317,8 @@ hello_message:
 .text "        SID: GHOST IN MY LOAF BY CHRIS WEMYSS"
 .text "        UNTIL NEXT WE MEET AGAIN... THIS IS DEADLINE/CXN "
 .text " SUBSCRIBE TO OUR YOUTUBE CHANNEL: @CITYXEN "
-.text "                 END"
-.text "                       "
+.text "                         END "
+.text "                             "
 .byte $ff
 
 //----------------------------------------------------------
