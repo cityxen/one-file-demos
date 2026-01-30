@@ -12,3 +12,15 @@
 
 ![Baka Retro Crew](https://raw.githubusercontent.com/cityxen/one-file-demos/refs/heads/main/baka-retro-crew/baka-retro-crew.png)
 
+##HACKME Corporation
+
+![HACKME Corporation](https://raw.githubusercontent.com/cityxen/one-file-demos/refs/heads/main/hackme-corporation/hackme-corp.png)
+
+##Miss DOS
+
+![Miss DOS](https://raw.githubusercontent.com/cityxen/one-file-demos/refs/heads/main/miss-dos/miss-dos.png)
+
+##Encrypted Tales
+
+![Encrypted Tales](https://raw.githubusercontent.com/cityxen/one-file-demos/refs/heads/main/encrypted-tales/encrypted-tales.png)
+
