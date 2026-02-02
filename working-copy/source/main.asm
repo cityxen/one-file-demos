@@ -50,7 +50,7 @@ start:
 	lda 678 // $02a6 // 1 = pal 0 = ntsc
 	beq !+
 	// pal
-	lda #120
+	lda #140
 	sta music_speed
 	lda #1
 	sta scroll_speed
@@ -63,7 +63,7 @@ start:
 	jmp palcheck_out
 !:
 	// ntsc
-	lda #120
+	lda #140
 	sta music_speed
 	lda #1
 	sta scroll_speed
@@ -224,6 +224,8 @@ irq_timers:
     lda #$00
     sta irq_timer1
 	jsr music.play
+
+	
 !it:
 
     lda irq_timer3
