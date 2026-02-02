@@ -34,7 +34,9 @@
 .fill music.size, music.getData(i)
 
 *=charset_loc "Char Set Data"
-#import "chars-charset.asm"
+// #import "chars-charset.asm"
+charset:
+.import binary "arcade-64chars.bin"
 
 * = bitmap "Img Data"
 imgdata:
@@ -50,10 +52,9 @@ start:
 	// pal
 	lda #120
 	sta music_speed
-	
-	lda #60
+	lda #1
 	sta scroll_speed
-	lda #200
+	lda #240
 	sta color_speed
 	lda #$e8
 	sta raster_wtf
@@ -64,9 +65,9 @@ start:
 	// ntsc
 	lda #120
 	sta music_speed
-	lda #100
+	lda #1
 	sta scroll_speed
-	lda #200
+	lda #240
 	sta color_speed
 	lda #$de
 	sta raster_wtf
@@ -225,15 +226,6 @@ irq_timers:
 	jsr music.play
 !it:
 
-    lda irq_timer2
-    cmp scroll_speed
-    bne !it+
-    inc irq_timer_trig2
-    lda #$00
-    sta irq_timer2
-	jsr scroll_it
-!it:
-
     lda irq_timer3
     cmp color_speed
     bne !it+
@@ -241,6 +233,7 @@ irq_timers:
     lda #$00
     sta irq_timer3
 	jsr color_it
+	
 !it:
 
 	rts
@@ -272,9 +265,11 @@ irq_chars:
     sta VIC_CONTROL_REG_2
 	lda #$1b
 	sta VIC_CONTROL_REG_1
+	
 
 	ldx #$1b
 	stx $d011
+
 
 	lda #$02
 	sta VIC_RASTER_COUNTER
@@ -322,9 +317,19 @@ irq_bitmap:
     and #$0f           // get low 4 bits for background color
     sta $d021
 
+	ldx scroll_speed
+!:
+	txa
+	pha
+	jsr scroll_it
+	pla
+	tax
+	dex
+	bne !-
+
 	lda raster_wtf
 	sta VIC_RASTER_COUNTER
-
+	
 	lda #<irq_chars
 	sta $0314
 	lda #>irq_chars
