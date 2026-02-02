@@ -1,0 +1,5 @@
+echo Build Script: Building %1
+sidreloc -p 50 -z 80-ff -v input.sid output.sid
+call KickAss main.asm -cfgfile "KickAss.cfg"
+call exomize.bat
+del prg_files\*.sym

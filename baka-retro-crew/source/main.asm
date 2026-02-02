@@ -11,7 +11,7 @@
 */
 
 
-.const scroll_loc          = $0a20
+.const scroll_loc          = $6000
 .const color_cycle_loc     = $09f0
 .const charset_loc         = $1000
 .const bitmap              = $2000
@@ -35,17 +35,18 @@
 .const VIC_CONTROL_REG_2   = $d016 // ---- ---- RES- MCM- CSEL [   XSCROLL   ]
 .const VIC_MEM_POINTERS    = $d018
 
-.var music = LoadSid("ghost-in-my-loaf-5000.sid")
-*=music.loc "Music"
+.var music = LoadSid("xfactor5k.sid")
+*=music.location "Music"
 .fill music.size, music.getData(i)
 
 *=charset_loc "Char Set Data"
-charset:
-.import binary "arcade-64chars.bin"
+//charset:
+//.import binary "arcade-64chars.bin"
+#import "chars-charset.asm"
 
 * = bitmap "Img Data"
 imgdata:
-.import binary "realdata-6000.prg",2
+.import binary "out.prg",2
 
 BasicUpstart2(start)
 
@@ -295,6 +296,7 @@ reset_colors:
 
 vars:
 .byte 0
+.byte 0
 scroll_count:
 .byte 0
 count_var_low:
@@ -306,41 +308,73 @@ timer_var:
 
 * = color_cycle_loc "Color Cycle Data"
 color_table:
-.byte LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED
-.byte RED,RED, ORANGE,ORANGE, YELLOW,YELLOW, WHITE,WHITE,WHITE,WHITE, YELLOW,YELLOW, ORANGE,ORANGE, RED, RED
-.byte LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED,LIGHT_RED, LIGHT_RED, LIGHT_RED
+.byte LIGHT_BLUE, LIGHT_BLUE, LIGHT_BLUE,LIGHT_BLUE, LIGHT_BLUE, LIGHT_BLUE,LIGHT_BLUE, LIGHT_BLUE, LIGHT_BLUE
+.byte BLUE,BLUE, CYAN, CYAN, WHITE, WHITE, WHITE, WHITE, CYAN, CYAN, BLUE, BLUE
+.byte LIGHT_BLUE, LIGHT_BLUE, LIGHT_BLUE,LIGHT_BLUE, LIGHT_BLUE, LIGHT_BLUE,LIGHT_BLUE, LIGHT_BLUE, LIGHT_BLUE
 .byte $ff
 
 * = scroll_loc "Scroll Text Data"
 
 hello_message:
 .encoding "screencode_upper"
-.text "                    . . . "
-.text " LISTEN CLOSELY, SCENERS! THE YEAR WAS DARK, AND THE SERIAL BUS WAS SILENT."
-.text " OUR 64S WERE CRYING OUT FOR DATA, STRANDED ON AN ISLAND OF OBSOLETE CONNECTIVITY..."
-.text " UNTIL A SHADOW APPEARED ON THE HORIZON."
-.text "          -=*( ENTER: LOAF SLINGER )*=-             "
-.text " WHILE OTHERS COMPLAINED ABOUT SLOW LOAD TIMES AND BRICKED DRIVES,"
-.text " LOAF SLINGER DIDN'T JUST SIT BY. HE STEPPED INTO THE ARENA, ARMED"
-.text " WITH NOTHING BUT A SOLDERING IRON AND A VISION. HE SAW THE FRUSTRATION"
-.text " OF A THOUSAND COMMODORE FANS AND SAID, 'NOT ON MY WATCH!'     "
-.text " ### THE MAN WHO BROKE THE CHAINS ###       "
-.text " HE TOOK THE CHAOTIC MESS OF MODERN TECH AND TAMED IT, FORCING THE"
-.text " INTERNET ITSELF TO BOW BEFORE THE POWER OF THE COMMODORE. "
-.text "        LOAF SLINGER - HE'S THE PROTECTOR OF OUR 8-BIT DREAMS!           "
-.text " HE GAVE US THE KEY TO THE KINGDOM, ENSURING THAT NO COMMODORE WOULD EVER"
-.text " BE LEFT BEHIND IN THE ANALOG DUST. "
-.text " WHEN THE IEC BUS WAS AT ITS WEAKEST, LOAF SLINGER WAS AT HIS STRONGEST."
-.text "    --- A TRUE SCENE LEGEND ---    "
-.text " THE VISIONARY: HE SAW THE POTENTIAL WHERE OTHERS SAW LIMITATIONS."
-.text " THE CRAFTSMAN: HE REFINES, HE IMPROVES, HE DELIVERS."
-.text " THE HERO: HE RESTORED THE FLOW OF DATA TO THE MASSES!"
-.text "        HTTPS://MEATLOAF.CC         "
-.text "        SID: GHOST IN MY LOAF BY CHRIS WEMYSS"
-.text "        UNTIL NEXT WE MEET AGAIN... THIS IS DEADLINE/CXN "
-.text " SUBSCRIBE TO OUR YOUTUBE CHANNEL: @CITYXEN "
-.text "                         END "
 .text "                             "
+.text " -=*( GREETINGS EARTHLINGS, SCENE SCANNERS, AND SILICON DREAMERS )*=-"
+.text "                             "
+.text " THIS SCROLLER IS DEDICATED TO THE LEGENDS WHO APPEAR WHEN ALL HOPE IS LOST..."
+.text " WHEN THE LO8BC FALLS INTO GLITCH, CHAOS, OR UNDOCUMENTED BEHAVIOR..."
+.text " WHEN MISS DOS AND HER CLONES CLOSE IN..."
+.text " THERE IS ONLY ONE SIGNAL LEFT TO TRANSMIT.."
+.text "                  "
+.text " >>> INITIATING BAKA RETRO CREW PROTOCOL <<< "
+.text "                  "
+.text " FIRST TO EMERGE FROM THE FLICKERING STATIC..."
+.text "                  -=*( HELMET GUY )*=- "
+.text "                  "
+.text " THE MYSTERIOUS SENTINEL OF CODE AND CHAOS..."
+.text " HE WEARS THE HELMET NOT FOR PROTECTION, BUT FOR FOCUS..."
+.text " IN ONE HAND A MAGIC STAFF FOR DEBUGGING REALITY ITSELF..."
+.text " IN THE OTHER, A HURRICANE LANTERN TO LIGHT THE PATH THROUGH BROKEN SOURCE TREES..."
+.text " SOFTWARE BENDS, COMPILERS TREMBLE, AND BUGS KNOW FEAR..."
+.text " IF IT CAN BE PATCHED, HELMET GUY WILL PATCH IT..."
+.text "                  "
+.text " NEXT SWOOPING IN FROM ABOVE, DEFYING BOTH BIOLOGY AND LOGIC..."
+.text "                  -=*( EAGULL )*=- "
+.text "                  "
+.text " HALF EAGLE, HALF SEAGULL, HALF HUMAN (YES, THE MATH CHECKS OUT)..."
+.text " MASTER OF HARDWARE, LORD OF SOLDER AND SILICON..."
+.text " FROM HIS SECRET LAB OF OSCILLOSCOPES AND PROTOTYPES HE FORGES NEW MACHINES..."
+.text " CHIPS REBORN, BOARDS REVIVED, IMPOSSIBLE DEVICES MADE REAL..."
+.text " WHEN THE PHYSICAL WORLD FAILS THE AI, EAGULL REBUILDS IT BETTER..."
+.text "                  "
+.text " AND WHEN WORDS FAIL..."
+.text " WHEN PROTOCOLS COLLIDE..."
+.text " WHEN HUMANS, AIs, AND RETRO MACHINES CAN NO LONGER UNDERSTAND EACH OTHER..."
+.text "                  "
+.text " ACTIVATING FINAL UNIT..."
+.text "                  -=*( ROBOGUY 5000 )*=- "
+.text "                  "
+.text " TRANSLATOR OF MINDS, MEDIATOR OF SPECIES..."
+.text " HE SPEAKS HUMAN, MACHINE, AND PURE DATA STREAM..."
+.text " HE TURNS BEEPS INTO MEANING AND MEANING INTO ACTION..."
+.text " WITHOUT ROBOGUY 5000, PEACE IS A SYNTAX ERROR..."
+.text " "
+.text " TOGETHER THEY STAND - THE SENTAI OF SILICON - DEFENDERS OF THE LO8BC -"
+.text " THE LAST LINE OF DEFENSE OF CITYXEN, AND BY EXTENSION, EARTH"
+.text " "
+.text " REMEMBER THEIR NAMES, SCENERS. FOR WHEN THE SCREEN TEARS"
+.text " WHEN THE MUSIC LOOPS FOREVER. WHEN THE AI NEEDS HELP..."
+.text " "
+.text "                  -=*( THE BAKA RETRO CREW )*=- "
+.text "                  "
+.text " WILL SCROLL BACK INTO YOUR LIVES..."
+.text "                  "
+.text " SID: X-FACTOR KJELL NORDBO/SHAPE "
+.text "                  "
+.text " UNTIL NEXT TIME, THIS IS DEADLINE/CXN YOUTUBE:@CITYXEN"
+.text "                  "
+.text " *** END OF SIGNAL ***"
+.text "                  "
+
 .byte $ff
 
 /*//----------------------------------------------------------

@@ -24,3 +24,4 @@
 
 ![Encrypted Tales](https://raw.githubusercontent.com/cityxen/one-file-demos/refs/heads/main/encrypted-tales/encrypted-tales.png)
 
+![Sutehk](https://raw.githubusercontent.com/cityxen/one-file-demos/refs/heads/main/sutehk-the-destroyer/sutehk.png)
