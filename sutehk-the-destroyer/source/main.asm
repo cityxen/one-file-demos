@@ -10,6 +10,8 @@
 
 */
 
+#import "Constants.asm"
+
 
 .const scroll_loc          = $6000
 .const color_cycle_loc     = $0b00
@@ -25,26 +27,16 @@
 .const screenRam           = $0400
 .const colorRam            = $d800
 
-.const zp_tmp              = $4e
-.const zp_tmp_lo           = $4e
-.const zp_tmp_hi           = $4f
-
 .const COLORS_BOTTOM_LEFT  = $dbc0
-
-.const SCREEN_MEM_POINTER  = $288 // 648
-.const VIC_CONTROL_REG_1   = $d011 // 53265 RST8 ECM- BMM- DEN- RSEL [   YSCROLL   ]
-.const VIC_RASTER_COUNTER  = $d012 // 53266
-.const VIC_CONTROL_REG_2   = $d016 // 53270 ---- ---- RES- MCM- CSEL [   XSCROLL   ]
-.const VIC_MEM_POINTERS    = $d018 // 53272
-.const VIC_INTERRUPT_REG   = $d019 // 53273 IRQ- ---- ---- ---- ILP- IMMC IMBC IRST
-.const CIA_2               = $dd00 // 56576 0-1 vic bank (00: bank3, 01: bank2, 10: bank1, 11: bank 0)
 
 .var music = LoadSid("output.sid")
 *=music.location "Music"
 .fill music.size, music.getData(i)
 
 *=charset_loc "Char Set Data"
-#import "chars-charset.asm"
+// #import "chars-charset.asm"
+charset:
+.import binary "arcade-64chars.bin"
 
 * = bitmap "Img Data"
 imgdata:
@@ -54,6 +46,35 @@ BasicUpstart2(start)
 
 *=$0810 "Main Program"
 start:
+
+	lda 678 // $02a6 // 1 = pal 0 = ntsc
+	beq !+
+	// pal
+	lda #140
+	sta music_speed
+	lda #1
+	sta scroll_speed
+	lda #240
+	sta color_speed
+	lda #$e8
+	sta raster_wtf
+	lda #$0e
+	sta raster_divin
+	jmp palcheck_out
+!:
+	// ntsc
+	lda #140
+	sta music_speed
+	lda #1
+	sta scroll_speed
+	lda #240
+	sta color_speed
+	lda #$de
+	sta raster_wtf
+	lda #$52
+	sta raster_divin
+
+palcheck_out:
 
     lda #<hello_message // set up scroller
     sta zp_tmp_lo
@@ -130,21 +151,41 @@ start:
 	lda #BLACK
 	sta scroll_background_color
 
+////////////////////////////////
+
 mainloop:
 
-	jsr $ffe4 // getkey
+	jsr KERNAL_GETIN
 
-	cmp #$0d
+	beq next_main
+	sta last_key_press
+
+	cmp #KEY_F1
 	bne !+
 	inc raster_wtf
-	jmp mainloop
+	jmp next_main
 !:
-	cmp #$11
+	cmp #KEY_F3
 	bne !+
 	dec raster_wtf
+	jmp next_main
 !:
-	jsr irq_music
 
+	cmp #KEY_F5
+	bne !+
+	inc raster_divin
+	jmp next_main
+!:
+
+	cmp #KEY_F7
+	bne !+
+	dec raster_divin
+	jmp next_main
+!:
+
+
+next_main:
+	jsr irq_timers
 	jmp mainloop
 
 ////////////////////////////////
@@ -169,53 +210,48 @@ copychars:
 	bne !-
 	rts
 
-// var space
-irq_timer1:
-.byte 0
-irq_timer2:
-.byte 0
-irq_timer_trig1:
-.byte 0
-irq_timer_trig2:
-.byte 0
+////////////////////////////////
 
-
-irq_music:
+irq_timers:
     inc irq_timer1
     inc irq_timer2
+	inc irq_timer3
 
     lda irq_timer1
-    cmp #170
+    cmp music_speed
     bne !it+
     inc irq_timer_trig1
     lda #$00
     sta irq_timer1
 	jsr music.play
-    
+
+	
 !it:
+
+    lda irq_timer3
+    cmp color_speed
+    bne !it+
+    inc irq_timer_trig3
+    lda #$00
+    sta irq_timer3
+	jsr color_it
+	
+!it:
+
 	rts
 
 ////////////////////////////////
 // draw scroller irq
 
 irq_chars:
-
-	//inc $d020
-/*
-    pha
-	txa
-	pha
-	ldx raster_wtf
-!:	
-	nop
-//	nop
-	dex
-	bne !-
-	pla
-	tax
-	pla
-	*/
 	
+	ldx #00
+!:
+	inx
+	cpx raster_divin
+	bne !-
+
+
 	lda scroll_background_color
 	sta $d021
 	
@@ -231,14 +267,11 @@ irq_chars:
     sta VIC_CONTROL_REG_2
 	lda #$1b
 	sta VIC_CONTROL_REG_1
+	
 
-	// lda #$18
 	ldx #$1b
-	// sta $d018
 	stx $d011
-	
-	jsr scroll_it
-	
+
 
 	lda #$02
 	sta VIC_RASTER_COUNTER
@@ -286,9 +319,19 @@ irq_bitmap:
     and #$0f           // get low 4 bits for background color
     sta $d021
 
-	lda #$f1
-	sta VIC_RASTER_COUNTER
+	ldx scroll_speed
+!:
+	txa
+	pha
+	jsr scroll_it
+	pla
+	tax
+	dex
+	bne !-
 
+	lda raster_wtf
+	sta VIC_RASTER_COUNTER
+	
 	lda #<irq_chars
 	sta $0314
 	lda #>irq_chars
@@ -297,9 +340,7 @@ irq_bitmap:
     asl VIC_INTERRUPT_REG
 	jmp $ea31
 
-
-
-
+////////////////////////////////
 
 scroll_it:
       
@@ -336,6 +377,11 @@ mvover1:
 mvlp223:
 
 skipmove:
+	rts
+
+////////////////////////////////
+
+color_it:
     // color cycling
     inc vars
     lda vars
@@ -362,9 +408,10 @@ cycle_colors:
     sta COLORS_BOTTOM_LEFT
     rts
 reset_colors:
-    lda #$ff
+    lda #$00
     sta vars+1
 	ldx vars+1
+	lda color_table,x
 	sta COLORS_BOTTOM_LEFT
 	rts
 
@@ -373,6 +420,12 @@ reset_colors:
 
 vars:
 .byte 0
+.byte 0
+music_speed:
+.byte 0
+scroll_speed:
+.byte 0
+color_speed:
 .byte 0
 scroll_count:
 .byte 0
@@ -391,7 +444,24 @@ scroll_background_color:
 .byte 0
 .byte 0
 raster_wtf:
-.byte $08
+.byte $f1
+last_key_press:
+.byte 0
+// var space
+irq_timer1:
+.byte 0
+irq_timer2:
+.byte 0
+irq_timer3:
+.byte 0
+irq_timer_trig1:
+.byte 0
+irq_timer_trig2:
+.byte 0
+irq_timer_trig3:
+.byte 0
+raster_divin:
+.byte 12
 
 * = color_cycle_loc "Color Cycle Data"
 #import "color-cycle.asm"
