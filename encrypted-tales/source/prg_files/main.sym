@@ -34,7 +34,7 @@
 .label mvlp22=$a33
 .label last_key_press=$a9f
 .label scroll_background_color=$a9c
-.label hello_message=$6000
+.label hello_message=$64a0
 .label count_var_low=$a94
 .label cycle_colors=$a63
 .label imgdata=$2000

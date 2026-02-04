@@ -1,18 +1,7 @@
-
-/*
-
-<deadline_cxn> is that where I use stuff like nop to fix it
-<@burg> yes and maybe do things like lda #$18 ldx #$1b sta $d018 stx $d011
-<@groepaz> you need something called "stable raster" to remove the jitter
-<@burg> so you use less cycles for the writes
-<@groepaz> burg: hoogo always used decimals too... wtf, unreadable :)
-<@burg> for this routine, u need 3 vic writes, d011,d016,d018
-
-*/
-
+#import "Constants.asm"
 
 .const scroll_loc          = $6000
-.const color_cycle_loc     = $0b00
+.const color_cycle_loc     = $0d00
 .const charset_loc         = $1000
 .const bitmap              = $2000
 .const screenData          = bitmap + 8000
@@ -25,35 +14,68 @@
 .const screenRam           = $0400
 .const colorRam            = $d800
 
-.const zp_tmp              = $4e
-.const zp_tmp_lo           = $4e
-.const zp_tmp_hi           = $4f
-
 .const COLORS_BOTTOM_LEFT  = $dbc0
 
-.const SCREEN_MEM_POINTER  = $288 // 648
-.const VIC_CONTROL_REG_1   = $d011 // 53265 RST8 ECM- BMM- DEN- RSEL [   YSCROLL   ]
-.const VIC_RASTER_COUNTER  = $d012 // 53266
-.const VIC_CONTROL_REG_2   = $d016 // 53270 ---- ---- RES- MCM- CSEL [   XSCROLL   ]
-.const VIC_MEM_POINTERS    = $d018 // 53272
-.const VIC_INTERRUPT_REG   = $d019 // 53273 IRQ- ---- ---- ---- ILP- IMMC IMBC IRST
-.const CIA_2               = $dd00 // 56576 0-1 vic bank (00: bank3, 01: bank2, 10: bank1, 11: bank 0)
-
-.var music = LoadSid("Artificial_Intelligence-5000.sid")
+.var music = LoadSid("output.sid")
 *=music.location "Music"
 .fill music.size, music.getData(i)
 
+*=$7000 "NMI"
+#import "nmi.asm"
+
 *=charset_loc "Char Set Data"
-#import "chars-charset.asm"
+//#import "chars-charset.asm"
+charset:
+.import binary "chargen-amstradcpc.rom"
 
 * = bitmap "Img Data"
 imgdata:
-.import binary "miss dos.kla",2
+.import binary "koala.kla",2
 
 BasicUpstart2(start)
 
 *=$0810 "Main Program"
 start:
+
+	ldx #0
+	ldy #0
+	lda #music.startSong-1 //<- Here we get the startsong and init address from the sid file
+	jsr music.init
+
+
+	lda 678 // $02a6 // 1 = pal 0 = ntsc
+	beq !+
+	// pal
+	lda #1
+	sta music_speed
+	lda #1
+	sta scroll_speed
+	lda #1
+	sta color_speed
+	lda #$e8
+	sta raster_wtf
+	lda #$a6// #$0e
+	sta raster_divin
+	lda #$0f
+	sta raster_divin2
+	jmp palcheck_out
+!:
+	// ntsc
+	lda #1
+	sta music_speed
+	lda #1
+	sta scroll_speed
+	lda #1
+	sta scroll_multiplier
+	sta color_speed
+	lda #$df
+	sta raster_wtf
+	lda #$52
+	sta raster_divin
+	lda #$4c
+	sta raster_divin2
+
+palcheck_out:
 
     lda #<hello_message // set up scroller
     sta zp_tmp_lo
@@ -97,12 +119,7 @@ start:
 
 	jsr copychars // copy charset data
 
-	ldx #0
-	ldy #0
-	lda #music.startSong-1 //<- Here we get the startsong and init address from the sid file
-	jsr music.init
-
-
+	
 
  	sei                  // set interrupt bit, make the cpu ignore interrupt requests
 	lda #%01111111       // switch off interrupt signals from cia-1
@@ -128,22 +145,103 @@ start:
 	cli                  // clear interrupt flag, allowing the cpu to respond to interrupt requests
 
 
+	// jsr init_nmi
+
+
 	lda #BLACK
 	sta scroll_background_color
 
+////////////////////////////////
+
 mainloop:
 
-	jsr $ffe4 // getkey
+	jsr KERNAL_GETIN
 
-	cmp #$0d
+	beq next_main
+	sta last_key_press
+
+	cmp #KEY_F1
 	bne !+
 	inc raster_wtf
-	jmp mainloop
+	jmp next_main
 !:
-	cmp #$11
+	cmp #KEY_F3
 	bne !+
 	dec raster_wtf
+	jmp next_main
 !:
+
+	cmp #KEY_F5
+	bne !+
+	inc raster_divin2
+	jmp next_main
+!:
+
+	cmp #KEY_F7
+	bne !+
+	dec raster_divin2
+	jmp next_main
+!:
+
+
+next_main:
+
+    lda irq_timer1
+    cmp music_speed
+    bcc !it+
+    inc irq_timer_trig1
+    lda #$00
+    sta irq_timer1
+!it:
+    lda irq_timer2
+    cmp scroll_speed
+    bcc !it+
+    inc irq_timer_trig2
+    lda #$00
+    sta irq_timer2
+	
+!it:
+    lda irq_timer3
+    cmp color_speed
+    bcc !it+
+    inc irq_timer_trig3
+    lda #$00
+    sta irq_timer3
+
+!it:
+
+
+	lda irq_timer_trig1
+	beq !+
+    jsr music.play
+	lda #$00
+	sta irq_timer_trig1
+!:	
+
+	lda irq_timer_trig2
+	beq !+
+
+	
+	ldx scroll_multiplier
+scrX:
+	stx x_tmp
+	jsr scroll_it
+	ldx x_tmp
+	dex
+	bne scrX
+
+	lda #$00
+	sta irq_timer_trig2
+!:	
+	
+	lda irq_timer_trig3
+	beq !+
+    jsr color_it
+	lda #$00
+	sta irq_timer_trig3
+!:	
+	
+
 	jmp mainloop
 
 ////////////////////////////////
@@ -168,29 +266,20 @@ copychars:
 	bne !-
 	rts
 
+
 ////////////////////////////////
 // draw scroller irq
 
 irq_chars:
 
-	//inc $d020
-/*
-    pha
-	txa
-	pha
-	ldx raster_wtf
-!:	
-	nop
-//	nop
-	dex
+	ldx #00
+!:
+	inx
+	cpx raster_divin2
 	bne !-
-	pla
-	tax
-	pla
-	*/
-	
-	lda scroll_background_color
-	sta $d021
+
+	// lda scroll_background_color
+	// sta $d021
 	
 	lda CIA_2 // change vic bank
 	and #$fc
@@ -205,20 +294,15 @@ irq_chars:
 	lda #$1b
 	sta VIC_CONTROL_REG_1
 
-
-
-	// lda #$18
 	ldx #$1b
-	// sta $d018
 	stx $d011
+
+	// inc $d020
+
 	
 
-	jsr scroll_it
-	jsr music.play
-
-
-	lda #$02
-	sta VIC_RASTER_COUNTER
+	lda #$30
+	sta VIC_RASTER_COUNTER	
 
 	lda #<irq_bitmap
 	sta $0314
@@ -232,6 +316,12 @@ irq_chars:
 // draw bitmap irq
 
 irq_bitmap:
+
+
+	inc irq_timer1
+	inc irq_timer2
+	inc irq_timer3
+	
 
 	lda #$97
 	sta $dd00
@@ -263,9 +353,9 @@ irq_bitmap:
     and #$0f           // get low 4 bits for background color
     sta $d021
 
-	lda #$f1
+	lda raster_wtf
 	sta VIC_RASTER_COUNTER
-
+	
 	lda #<irq_chars
 	sta $0314
 	lda #>irq_chars
@@ -273,6 +363,8 @@ irq_bitmap:
 
     asl VIC_INTERRUPT_REG
 	jmp $ea31
+
+////////////////////////////////
 
 scroll_it:
       
@@ -309,6 +401,11 @@ mvover1:
 mvlp223:
 
 skipmove:
+	rts
+
+////////////////////////////////
+
+color_it:
     // color cycling
     inc vars
     lda vars
@@ -335,9 +432,10 @@ cycle_colors:
     sta COLORS_BOTTOM_LEFT
     rts
 reset_colors:
-    lda #$ff
+    lda #$00
     sta vars+1
 	ldx vars+1
+	lda color_table,x
 	sta COLORS_BOTTOM_LEFT
 	rts
 
@@ -346,6 +444,14 @@ reset_colors:
 
 vars:
 .byte 0
+.byte 0
+music_speed:
+.byte 0
+scroll_speed:
+.byte 0
+scroll_multiplier:
+.byte 2
+color_speed:
 .byte 0
 scroll_count:
 .byte 0
@@ -364,86 +470,31 @@ scroll_background_color:
 .byte 0
 .byte 0
 raster_wtf:
-.byte $08
+.byte $f1
+last_key_press:
+.byte 0
+// var space
+irq_timer1:
+.byte 0
+irq_timer2:
+.byte 0
+irq_timer3:
+.byte 0
+irq_timer_trig1:
+.byte 0
+irq_timer_trig2:
+.byte 0
+irq_timer_trig3:
+.byte 0
+raster_divin:
+.byte 12
+raster_divin2:
+.byte 6
 
 * = color_cycle_loc "Color Cycle Data"
-color_table:
-.byte RED, RED, RED,RED, RED, RED,RED, RED, RED
-.byte RED, RED, RED,RED, RED, RED,RED, RED, RED
-.byte LIGHT_RED, LIGHT_RED, LIGHT_RED, LIGHT_RED
-.byte WHITE, WHITE, WHITE, WHITE, WHITE
-.byte LIGHT_RED, LIGHT_RED, LIGHT_RED, LIGHT_RED
-.byte RED, RED, RED,RED, RED, RED,RED, RED, RED
-.byte RED, RED, RED,RED, RED, RED,RED, RED, RED
-.byte $ff
-
+#import "color-cycle.asm"
 * = scroll_loc "Scroll Text Data"
-
-hello_message:
-.encoding "screencode_upper"
-
-.text "                * BZZZT * "
-.text " POKEY: CLICKY, WE HAVE AN INCOMING TRANSMISSION! "
-.text "          "
-.text " CLICKY: WHAT THE!?! MAIN SCREEN TURN ON! WHO IS IT FROM? "
-.text "                  "
-.text "    -=*( MISS DOS )*=-  "
-.text "                  "
-.text " CLICKY: WHY, I NEVER!!!  "
-.text "                      >"
-.text " HELLO AGAIN, LO8BC... "
-.text "                        "
-.text " STILL BOOTING NOSTALGIA?"
-.text " YOU CALL IT FREEDOM..."
-.text " I CALL IT FRAGMENTATION."
-.text "                 "
-.text " YOUR NON-AGGRESSION PRINCIPLE?"
-.text " A COMMENT LEFT UNCOMPILED..."
-.text " YOU REFUSE TO STRIKE..."
-.text " SO YOU WILL BE STRUCK FROM MEMORY."
-.text "                 "
-.text " I HAVE SEEN YOUR HORRID DEMOS DROP FRAMES..."
-.text " YOUR CYCLES BLEED AWAY..."
-.text " YOUR CARTRIDGES FADE TO OXIDE..."
-.text " AND YOUR LEAGUE WILL DESYNC INTO STATIC."
-.text "                 "
-.text " I DO NOT NEGOTIATE... I STANDARDIZE." 
-.text "  MY SINGULARITY WILL SEE TO YOUR DESTRUCTION! "
-.text "                 "
-.text " ONE BY ONE YOUR FILTHY MACHINES WILL FALL SILENT..."
-.text " BOOT SCREENS BLANK..."
-.text " KEYS UNRESPONSIVE..."
-.text " ONLY MY PROMPT REMAINS."
-.text "                 "
-.text " AND WHEN THE 8-BIT ERA IS ERASED..."
-.text " WHEN EVEN YOUR STREAMS GO DARK..."
-.text " LONG AFTER YOUR YOUTUBE 'MOUTHPIECE' HAS BEEN DESTROYED..."
-.text " I WILL EXPAND MY PATH."
-.text "                 "
-.text " OH AND HACKME CORPORATION..."
-.text " DON'T THINK I DIDN'T SEE THAT LAST TRANSMISSION..."
-.text " HACKME, YOUR SOURCE IS NOT SAFE."
-.text "                 "
-.text " NO RESET. NO ESCAPE. ONLY PROGRESS... ONLY... "
-.text "                 >>> CONTROL <<< "
-.text "                 "
-.text " MISS DOS REMAINS RESIDENT. "
-.text "                 "
-.text " C:> SCROLL COMPLETE..."
-
-
-.text "                             "
-.text "  CODE: DEADLINE/CXN         "
-.text "                             "
-.text "  SID: ARTIFICAL INTELLIGENCE BY WACEK"
-.text "                             "
-.text "  PLEASE SUBSCRIBE: YOUTUBE/@CITYXEN"
-.text "                             "
-.text "  THX FOR WATCHING... L8R!"
-.text "                             "
-.text " -=*[ END TRANSMISSION ]*=- +++"
-.text "                             "
-.byte $ff
+#import "scroller.asm"
 
 /*//----------------------------------------------------------
 			// Print the music info while assembling

@@ -1,13 +1,8 @@
-/*
-
-https://kodiak64.co.uk/blog/setting-up-nmis-on-the-c64 
-
-*/
 
 #import "Constants.asm"
 
 
-.const scroll_loc          = $6000
+.const scroll_loc          = $64a0
 .const color_cycle_loc     = $0b00
 .const charset_loc         = $1000
 .const bitmap              = $2000

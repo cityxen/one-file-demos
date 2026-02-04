@@ -1,16 +1,4 @@
 
-/*
-
-<deadline_cxn> is that where I use stuff like nop to fix it
-<@burg> yes and maybe do things like lda #$18 ldx #$1b sta $d018 stx $d011
-<@groepaz> you need something called "stable raster" to remove the jitter
-<@burg> so you use less cycles for the writes
-<@groepaz> burg: hoogo always used decimals too... wtf, unreadable :)
-<@burg> for this routine, u need 3 vic writes, d011,d016,d018
-
-*/
-
-
 .const scroll_loc          = $6000
 .const color_cycle_loc     = $0b00
 .const charset_loc         = $1000

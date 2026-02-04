@@ -1,20 +1,8 @@
 
-/*
-
-<deadline_cxn> is that where I use stuff like nop to fix it
-<@burg> yes and maybe do things like lda #$18 ldx #$1b sta $d018 stx $d011
-<@groepaz> you need something called "stable raster" to remove the jitter
-<@burg> so you use less cycles for the writes
-<@groepaz> burg: hoogo always used decimals too... wtf, unreadable :)
-<@burg> for this routine, u need 3 vic writes, d011,d016,d018
-
-*/
-
 #import "Constants.asm"
 
-
 .const scroll_loc          = $6000
-.const color_cycle_loc     = $0b00
+.const color_cycle_loc     = $0d00
 .const charset_loc         = $1000
 .const bitmap              = $2000
 .const screenData          = bitmap + 8000
@@ -33,8 +21,11 @@
 *=music.location "Music"
 .fill music.size, music.getData(i)
 
+*=$7000 "NMI"
+#import "nmi.asm"
+
 *=charset_loc "Char Set Data"
-// #import "chars-charset.asm"
+//#import "chars-charset.asm"
 charset:
 .import binary "arcade-64chars.bin"
 
@@ -47,32 +38,44 @@ BasicUpstart2(start)
 *=$0810 "Main Program"
 start:
 
+	ldx #0
+	ldy #0
+	lda #music.startSong-1 //<- Here we get the startsong and init address from the sid file
+	jsr music.init
+
+
 	lda 678 // $02a6 // 1 = pal 0 = ntsc
+	sta ntsc_pal
 	beq !+
 	// pal
-	lda #140
+	lda #1
 	sta music_speed
 	lda #1
 	sta scroll_speed
-	lda #240
+	lda #1
 	sta color_speed
-	lda #$e8
+	lda #$eb
 	sta raster_wtf
-	lda #$0e
+	lda #$a6// #$0e
 	sta raster_divin
+	lda #$20
+	sta raster_divin2
 	jmp palcheck_out
 !:
 	// ntsc
-	lda #140
+	lda #1
 	sta music_speed
 	lda #1
 	sta scroll_speed
-	lda #240
+	lda #1
+	sta scroll_multiplier
 	sta color_speed
-	lda #$de
+	lda #$e2
 	sta raster_wtf
 	lda #$52
 	sta raster_divin
+	lda #$57 // #$5d
+	sta raster_divin2
 
 palcheck_out:
 
@@ -116,12 +119,10 @@ palcheck_out:
 	inx
 	bne !-
 
+
 	jsr copychars // copy charset data
 
-	ldx #0
-	ldy #0
-	lda #music.startSong-1 //<- Here we get the startsong and init address from the sid file
-	jsr music.init
+	
 
  	sei                  // set interrupt bit, make the cpu ignore interrupt requests
 	lda #%01111111       // switch off interrupt signals from cia-1
@@ -146,6 +147,8 @@ palcheck_out:
 
 	cli                  // clear interrupt flag, allowing the cpu to respond to interrupt requests
 
+
+	// jsr init_nmi
 
 
 	lda #BLACK
@@ -173,19 +176,75 @@ mainloop:
 
 	cmp #KEY_F5
 	bne !+
-	inc raster_divin
+	inc raster_divin2
 	jmp next_main
 !:
 
 	cmp #KEY_F7
 	bne !+
-	dec raster_divin
+	dec raster_divin2
 	jmp next_main
 !:
 
 
 next_main:
-	jsr irq_timers
+
+    lda irq_timer1
+    cmp music_speed
+    bcc !it+
+    inc irq_timer_trig1
+    lda #$00
+    sta irq_timer1
+!it:
+    lda irq_timer2
+    cmp scroll_speed
+    bcc !it+
+    inc irq_timer_trig2
+    lda #$00
+    sta irq_timer2
+	
+!it:
+    lda irq_timer3
+    cmp color_speed
+    bcc !it+
+    inc irq_timer_trig3
+    lda #$00
+    sta irq_timer3
+
+!it:
+
+
+	lda irq_timer_trig1
+	beq !+
+    jsr music.play
+	lda #$00
+	sta irq_timer_trig1
+!:	
+
+	lda irq_timer_trig2
+	beq !+
+
+	
+	ldx scroll_multiplier
+scrX:
+	stx x_tmp
+	jsr scroll_it
+	ldx x_tmp
+	dex
+	bne scrX
+
+	lda #$00
+	sta irq_timer_trig2
+!:	
+	
+	lda irq_timer_trig3
+	beq !+
+    jsr color_it
+	lda #$00
+	sta irq_timer_trig3
+!:	
+	
+
 	jmp mainloop
 
 ////////////////////////////////
@@ -210,50 +269,31 @@ copychars:
 	bne !-
 	rts
 
-////////////////////////////////
-
-irq_timers:
-    inc irq_timer1
-    inc irq_timer2
-	inc irq_timer3
-
-    lda irq_timer1
-    cmp music_speed
-    bne !it+
-    inc irq_timer_trig1
-    lda #$00
-    sta irq_timer1
-	jsr music.play
-
-	
-!it:
-
-    lda irq_timer3
-    cmp color_speed
-    bne !it+
-    inc irq_timer_trig3
-    lda #$00
-    sta irq_timer3
-	jsr color_it
-	
-!it:
-
-	rts
 
 ////////////////////////////////
 // draw scroller irq
 
 irq_chars:
-	
+
 	ldx #00
 !:
 	inx
-	cpx raster_divin
+	cpx raster_divin2
 	bne !-
+	lda #YELLOW
+	sta colorRam+(1000-40-40)
+	sta colorRam+(1000-40-39)
+	sta colorRam+(1000-40-38)
+	sta colorRam+(1000-40-37)
+	sta colorRam+(1000-40-36)
+	sta colorRam+(1000-40-1)
+	sta colorRam+(1000-40-2)
+	sta colorRam+(1000-40-3)
+	sta colorRam+(1000-40-4)
+	sta colorRam+(1000-40-5)
 
-
-	lda scroll_background_color
-	sta $d021
+	// lda scroll_background_color
+	// sta $d021
 	
 	lda CIA_2 // change vic bank
 	and #$fc
@@ -267,14 +307,16 @@ irq_chars:
     sta VIC_CONTROL_REG_2
 	lda #$1b
 	sta VIC_CONTROL_REG_1
-	
 
 	ldx #$1b
 	stx $d011
 
+	// inc $d020
 
-	lda #$02
-	sta VIC_RASTER_COUNTER
+	
+
+	lda #$30
+	sta VIC_RASTER_COUNTER	
 
 	lda #<irq_bitmap
 	sta $0314
@@ -288,6 +330,18 @@ irq_chars:
 // draw bitmap irq
 
 irq_bitmap:
+
+
+	inc irq_timer1
+	inc irq_timer2
+	inc irq_timer3
+
+/*
+	lda ntsc_pal
+	beq !+
+	inc irq_timer1
+	inc irq_timer1
+!: */
 
 	lda #$97
 	sta $dd00
@@ -318,16 +372,6 @@ irq_bitmap:
     lda background
     and #$0f           // get low 4 bits for background color
     sta $d021
-
-	ldx scroll_speed
-!:
-	txa
-	pha
-	jsr scroll_it
-	pla
-	tax
-	dex
-	bne !-
 
 	lda raster_wtf
 	sta VIC_RASTER_COUNTER
@@ -425,6 +469,8 @@ music_speed:
 .byte 0
 scroll_speed:
 .byte 0
+scroll_multiplier:
+.byte 2
 color_speed:
 .byte 0
 scroll_count:
@@ -462,6 +508,10 @@ irq_timer_trig3:
 .byte 0
 raster_divin:
 .byte 12
+raster_divin2:
+.byte 6
+ntsc_pal:
+.byte 0
 
 * = color_cycle_loc "Color Cycle Data"
 #import "color-cycle.asm"
