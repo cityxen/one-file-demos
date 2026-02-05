@@ -23,12 +23,7 @@ init_nmi:
     sta $dd0e
     cli         // Enable interrupts
     rts
-a_tmp:
-.byte 0
-x_tmp:
-.byte 0
-y_tmp:
-.byte 0
+
 
 //--- NMI Handler ---
 nmi_handler:

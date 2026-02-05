@@ -1,9 +1,3 @@
-/*
-
-https://kodiak64.co.uk/blog/setting-up-nmis-on-the-c64 
-
-*/
-
 #import "Constants.asm"
 
 .const scroll_loc          = $6000
@@ -26,13 +20,14 @@ https://kodiak64.co.uk/blog/setting-up-nmis-on-the-c64
 *=music.location "Music"
 .fill music.size, music.getData(i)
 
-*=$7000 "NMI"
-#import "nmi.asm"
+// *=$7000 "NMI"
+// #import "nmi.asm"
 
 *=charset_loc "Char Set Data"
-#import "chars-charset.asm"
-//charset:
+//#import "chars-charset.asm"
+charset:
 //.import binary "chargen-tidy.rom"
+.import binary "arcade-64chars.bin"
 
 * = bitmap "Img Data"
 imgdata:
@@ -56,8 +51,11 @@ start:
 	sta music_speed
 	lda #1
 	sta scroll_speed
-	lda #1
+	lda #2
+	sta scroll_multiplier
+	lda #$01
 	sta color_speed
+	sta color_multiplier
 	lda #$e8
 	sta raster_wtf
 	lda #$a6// #$0e
@@ -71,9 +69,12 @@ start:
 	sta music_speed
 	lda #1
 	sta scroll_speed
-	lda #1
+	lda #2
 	sta scroll_multiplier
+	lda #$01
 	sta color_speed
+	lda #$01
+	sta color_multiplier
 	lda #$df
 	sta raster_wtf
 	lda #$52
@@ -125,8 +126,6 @@ palcheck_out:
 
 	jsr copychars // copy charset data
 
-	
-
  	sei                  // set interrupt bit, make the cpu ignore interrupt requests
 	lda #%01111111       // switch off interrupt signals from cia-1
 	sta $dc0d
@@ -149,10 +148,6 @@ palcheck_out:
 	sta $d01a
 
 	cli                  // clear interrupt flag, allowing the cpu to respond to interrupt requests
-
-
-	// jsr init_nmi
-
 
 	lda #BLACK
 	sta scroll_background_color
@@ -217,35 +212,6 @@ next_main:
 !it:
 
 
-	lda irq_timer_trig1
-	beq !+
-    jsr music.play
-	lda #$00
-	sta irq_timer_trig1
-!:	
-
-	lda irq_timer_trig2
-	beq !+
-
-	
-	ldx scroll_multiplier
-scrX:
-	stx x_tmp
-	jsr scroll_it
-	ldx x_tmp
-	dex
-	bne scrX
-
-	lda #$00
-	sta irq_timer_trig2
-!:	
-	
-	lda irq_timer_trig3
-	beq !+
-    jsr color_it
-	lda #$00
-	sta irq_timer_trig3
-!:	
 	
 
 	jmp mainloop
@@ -307,7 +273,7 @@ irq_chars:
 
 	
 
-	lda #$30
+	lda #$20
 	sta VIC_RASTER_COUNTER	
 
 	lda #<irq_bitmap
@@ -328,6 +294,46 @@ irq_bitmap:
 	inc irq_timer2
 	inc irq_timer3
 	
+	
+	lda irq_timer_trig1
+	beq !+
+    jsr music.play
+	lda #$00
+	sta irq_timer_trig1
+!:	
+
+	lda irq_timer_trig2
+	beq !+
+
+	
+	ldx scroll_multiplier
+scrX:
+	stx x_tmp
+	jsr scroll_it
+	ldx x_tmp
+	dex
+	bne scrX
+
+	lda #$00
+	sta irq_timer_trig2
+!:	
+	
+	lda irq_timer_trig3
+	beq !+
+
+	ldx color_multiplier
+clrX:
+	beq clrOut
+	stx x_tmp
+    jsr color_it
+	ldx x_tmp
+	dex
+	bne clrX
+clrOut:
+
+	lda #$00
+	sta irq_timer_trig3
+!:	
 
 	lda #$97
 	sta $dd00
@@ -456,9 +462,11 @@ music_speed:
 scroll_speed:
 .byte 0
 scroll_multiplier:
-.byte 2
+.byte 3
 color_speed:
 .byte 0
+color_multiplier:
+.byte 2
 scroll_count:
 .byte 0
 count_var_low:
@@ -496,6 +504,12 @@ raster_divin:
 .byte 12
 raster_divin2:
 .byte 6
+a_tmp:
+.byte 0
+x_tmp:
+.byte 0
+y_tmp:
+.byte 0
 
 * = color_cycle_loc "Color Cycle Data"
 #import "color-cycle.asm"

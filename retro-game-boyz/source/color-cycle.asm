@@ -1,0 +1,38 @@
+color_table:
+.byte GREEN, GREEN
+.byte GREEN, GREEN
+.byte LIGHT_GREEN, LIGHT_GREEN
+.byte LIGHT_GREEN, LIGHT_GREEN
+.byte YELLOW, YELLOW
+.byte YELLOW, YELLOW
+.byte LIGHT_BLUE, LIGHT_BLUE
+.byte LIGHT_BLUE, LIGHT_BLUE
+.byte BLUE, BLUE
+.byte BLUE, BLUE
+.byte PURPLE, PURPLE
+.byte PURPLE, PURPLE
+.byte LIGHT_RED, LIGHT_RED
+.byte LIGHT_RED, LIGHT_RED
+.byte RED, RED
+.byte RED, RED
+.byte LIGHT_GREY
+.byte LIGHT_GREY
+.byte LIGHT_GREY
+.byte LIGHT_GREY
+.byte GREY
+.byte GREY
+.byte GREY
+.byte GREY
+.byte DARK_GREY
+.byte DARK_GREY
+.byte DARK_GREY
+.byte DARK_GREY
+.byte GREY
+.byte GREY
+.byte GREY
+.byte GREY
+.byte LIGHT_GREY
+.byte LIGHT_GREY
+.byte LIGHT_GREY
+.byte LIGHT_GREY
+.byte $ff
